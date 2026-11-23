@@ -1,0 +1,22 @@
+{
+  "batches": [
+    {
+      "batch_id": "run-A",
+      "rows": [
+        {"measurement_id": "M1", "strength": 20, "source": "coat-a.csv:2"},
+        {"measurement_id": "M2", "strength": 20, "source": "coat-a.csv:3"}
+      ]
+    }
+  ],
+  "template": {
+    "name": "coat",
+    "revision": "1",
+    "rows": [
+      {
+        "batch_id": "run-A", "measurement_id": "M1",
+        "reference": "../zero", "reference_source": "worksheet/coat:A4",
+        "default": {"value": 2, "source": "worksheet/coat:B4"}
+      }
+    ]
+  }
+}

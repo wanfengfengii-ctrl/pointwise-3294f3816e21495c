@@ -1,0 +1,26 @@
+{
+  "preview": {"bench": "east", "revision": "1", "mount": "shift/east/read"},
+  "reports": [
+    {
+      "request_id": "coat-live",
+      "applications": [
+        {"bench": "east", "revision": "1", "mount": "shift/east/read"},
+        {"bench": "west", "revision": "1", "mount": "shift/west/read"}
+      ]
+    },
+    {
+      "request_id": "coat-lockout",
+      "applications": [
+        {"bench": "east", "revision": "1", "mount": "shift/east/read"},
+        {"bench": "west", "revision": "disabled", "mount": "shift/west/read"}
+      ]
+    },
+    {
+      "request_id": "coat-fallback",
+      "applications": [
+        {"bench": "east", "revision": "1", "mount": "shift/east/read"},
+        {"bench": "west", "revision": "missing", "mount": "shift/west/read"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "bench": "east", "revision": "1",
+    "entries": [
+      {"path": "shift/east/zero", "state": "value", "value": 3, "source": "east-log:8"},
+      {"path": "shift/check/zero", "state": "value", "value": 11, "source": "east-log:9"}
+    ]
+  },
+  {
+    "bench": "west", "revision": "1",
+    "entries": [{"path": "shift/west/zero", "state": "value", "value": 7, "source": "west-log:5"}]
+  },
+  {
+    "bench": "west", "revision": "disabled",
+    "entries": [{"path": "shift/west/zero", "state": "disabled", "source": "west-lockout:12"}]
+  },
+  {"bench": "west", "revision": "missing", "entries": []},
+  {
+    "bench": "west", "revision": "zero",
+    "entries": [{"path": "shift/west/zero", "state": "value", "value": 0, "source": "west-log:13"}]
+  }
+]
