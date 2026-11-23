@@ -2,8 +2,11 @@ from bench.issue import decode_bench_body
 from bench.paths import resolve_relative
 from processing.applications import bind_applications
 from processing.results import ApplicationResult, make_result_row
+from processing.review import verify_disclosure as _verify_disclosure
 from template.calibration import decide_zero
 from template.issue import decode_template_body
+
+__all__ = ['run', 'verify_disclosure']
 
 
 def run(db, items):
@@ -16,3 +19,8 @@ def run(db, items):
             zero = decide_zero(path, bench.entries.get(path), row.default)
             rows.append(make_result_row(binding, template, bench, position, row, zero))
     return ApplicationResult(tuple(rows))
+
+
+def verify_disclosure(anchors, roster, packet):
+    """Review a limited-row disclosure with no database access."""
+    return _verify_disclosure(anchors, roster, packet)

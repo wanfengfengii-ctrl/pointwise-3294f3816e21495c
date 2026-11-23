@@ -9,11 +9,12 @@ from processing.applications import ApplicationItem
 from processing.apply import run
 from processing.intake import receive
 from report.publish import publish
-from report.readback import read
+from report.readback import disclose, read
 from source.initialize import initialize_source
 from template.draft import build_draft
 from template.issue import issue_template
 from template.revision import freeze_template
+from processing.apply import verify_disclosure
 
 
 APPLICATIONS = (
@@ -72,6 +73,18 @@ def issuance_anchors(template, benches):
     return {(item.kind, item.number): item.digest for item in (template, *benches)}
 
 
+def v2_template(db, name, revision):
+    return issue_template(db, name, revision, version=2)
+
+
+def v2_bench(db, bench, revision):
+    return issue_bench(db, bench, revision, version=2)
+
+
+def disclose_sample(db, report_id, ordinals=ORDINALS):
+    return disclose(db, report_id, ordinals)
+
+
 def main():
     with closing(sqlite3.connect(":memory:")) as author:
         template, benches = prepare(author)
@@ -88,6 +101,57 @@ def main():
     if actual != expected or signed.total != 70 or len(signed.rows) != 6:
         raise RuntimeError(f"unexpected V1 signed sample: {actual!r}, total={signed.total}")
     print(json.dumps({"report_id": receipt.report_id, "selected": actual, "signed_total": signed.total}))
+
+
+def main_v2():
+    with closing(sqlite3.connect(":memory:")) as author:
+        template, benches = prepare(author, v2_template, v2_bench)
+        anchors = issuance_anchors(template, benches)
+    with closing(sqlite3.connect(":memory:")) as handoff:
+        receipt = sign(handoff, template, benches)
+        packet = disclose_sample(handoff, receipt.report_id)
+        roster = approval(receipt.report_id, template, benches)
+    reviewed = verify_disclosure(anchors, roster, json.loads(packet))
+    actual = [(row["ordinal"], row["source"]["measurement_id"], row["strength"], row["zero"]["kind"])
+              for row in reviewed["rows"]]
+    expected = [(1, "M1", 17, "bench"), (3, "M1", None, "disabled"), (5, "M1", 18, "default")]
+    if actual != expected or reviewed["total"] != 35:
+        raise RuntimeError(f"unexpected V2 disclosure sample: {actual!r}, total={reviewed['total']}")
+    print(json.dumps({"report_id": reviewed["report_id"], "selected": actual, "review_total": reviewed["total"]}))
+    _check_rejections(anchors, roster, packet)
+    return template, benches, anchors, packet, roster
+
+
+def _rejected(anchors, roster, packet, mutate):
+    data = json.loads(packet)
+    mutate(data)
+    try:
+        verify_disclosure(anchors, roster, data)
+    except ValueError:
+        return True
+    raise RuntimeError("disclosure review accepted a tampered packet")
+
+
+def _check_rejections(anchors, roster, packet):
+    def drop_lockout(data):
+        retired = data["rows"][1]
+        retired["entry"] = None
+        retired["bench_proof"] = data["rows"][2]["bench_proof"]
+
+    def substitute_original(data):
+        data["rows"][0]["template"]["source"]["measurement_id"] = "M2"
+
+    def extra_row(data):
+        data["rows"].append(dict(data["rows"][0]))
+
+    for label, mutate in (
+        ("drop-lockout-evidence", drop_lockout),
+        ("same-value-substitute", substitute_original),
+        ("unapproved-extra-row", extra_row),
+    ):
+        if not _rejected(anchors, roster, packet, mutate):
+            raise RuntimeError(f"rejection case {label} failed")
+    print(json.dumps({"rejected": ["drop-lockout-evidence", "same-value-substitute", "unapproved-extra-row"]}))
 
 
 if __name__ == "__main__":
